@@ -1,0 +1,81 @@
+services:
+  traefik:
+    image: docker.io/traefik:v3.2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/etc/traefik/dynamic
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./app/docker/traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./app/docker/traefik/dynamic:/etc/traefik/dynamic
+    networks:
+      - my_blog
+
+  api: &api
+    build:
+      context: .
+      dockerfile: ./app/docker/fastapi/Dockerfile
+    volumes:
+      - .:/src
+      - ./app/logs:/src/backend/app/logs
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - mailpit
+    command: /start.sh
+    networks:
+      - my_blog
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.api.service=api-service"
+      - "traefik.http.services.api-service.loadbalancer.server.port=8000"
+      - "traefik.http.services.api-service.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.api-service.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.api-service.loadbalancer.healthcheck.timeout=5s"
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.20.3
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    volumes:
+      - nextgen_mailpit_data:/data
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATA_FILE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCPEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks:
+      - my_blog
+
+  postgres:
+    build:
+      context : .
+      dockerfile: ./app/docker/postgres/Dockerfile
+    ports:
+      - "5432:5432"
+    volumes:
+      - my_blog_local_db:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - my_blog
+
+networks:
+   my_blog:
+    external: true
+
+volumes:
+   my_blog_local_db:
+   nextgen_mailpit_data:

@@ -10,10 +10,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 
 LOG_FORMAT = (
-    "{time:YYYY-MM-DD HH:mm:ss} | "
-    "{level: <8} | "
-    "{name}:{function}:{line} - "
-    "{message}"
+    "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
 )
 
 # Debug / Info logs
@@ -38,6 +35,7 @@ logger.add(
     backtrace=True,
     diagnose=True,
 )
+
 
 def get_logger():
     return logger

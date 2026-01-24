@@ -1,10 +1,13 @@
 # wait_db.py
-import sys, time, psycopg
+import sys
+import time
+import psycopg
 import os
 
 MAX_WAIT_TIME_SECONDS = 30
 RETRY_INTERVAL = 5
 start_time = time.time()
+
 
 def check_database():
     try:
@@ -22,11 +25,14 @@ def check_database():
         sys.stderr.write(f"Database connection failed after {elapsed}s: {e}\n")
         return False
 
+
 while True:
     if check_database():
         break
     if time.time() - start_time > MAX_WAIT_TIME_SECONDS:
-        sys.stderr.write("Error: Database connection could not be established after 30 seconds\n")
+        sys.stderr.write(
+            "Error: Database connection could not be established after 30 seconds\n"
+        )
         sys.exit(1)
     sys.stderr.write(f"Waiting {RETRY_INTERVAL}s before retrying...\n")
     time.sleep(RETRY_INTERVAL)
